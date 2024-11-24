@@ -44,7 +44,7 @@ function startChat() {
 
 // Create Room
 createRoomBtn.addEventListener('click', () => {
-    currentRoom = `Room-${Math.random().toString(36).substr(2, 6)}`;
+    currentRoom = `${Math.random().toString(36).substr(2, 6)}`;
     joinRoom();
 });
 
@@ -134,7 +134,7 @@ sendFileBtn.addEventListener('click', () => {
         reader.onload = (e) => {
             const chunk = e.target.result;
             const isLastChunk = offset + chunkSize >= file.size;
-            
+
             socket.emit('file-chunk', {
                 fileId,
                 chunk,
@@ -217,3 +217,56 @@ function handleRoomEnter(e) {
     }
 }
 
+document.getElementById('copy-btn').addEventListener('click', function () {
+    const copyBtn = this; // Reference the button
+    const roomName = document.getElementById('room-name').textContent; // Get the room name text
+    navigator.clipboard.writeText(roomName) // Use clipboard API to copy the text
+        .then(() => {
+            // Change button content to ✔
+            copyBtn.textContent = '✔';
+            // Revert back to ❐ after 3 seconds
+            setTimeout(() => {
+                copyBtn.textContent = '❐';
+            }, 2000);
+        })
+        .catch((err) => {
+            console.error('Failed to copy: ', err); // Error handling
+        });
+});
+
+
+// Add this function after the existing code
+function addContextMenu() {
+    const messages = document.getElementById('messages');
+
+    messages.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+
+        // Check if the right-click is on a message content
+        const messageContent = e.target.closest('.message-content');
+        if (messageContent) {
+            const text = messageContent.textContent;
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    // Show a temporary "Copied!" message
+                    const copiedMsg = document.createElement('div');
+                    copiedMsg.textContent = 'Copied!';
+                    copiedMsg.className = 'copied-message';
+                    copiedMsg.style.left = `${e.pageX}px`;
+                    copiedMsg.style.top = `${e.pageY}px`;
+                    document.body.appendChild(copiedMsg);
+
+                    // Remove the "Copied!" message after 1 second
+                    setTimeout(() => {
+                        document.body.removeChild(copiedMsg);
+                    }, 1000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+        }
+    });
+}
+
+// Call the function to set up the context menu
+addContextMenu();

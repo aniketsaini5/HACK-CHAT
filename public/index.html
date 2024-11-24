@@ -29,10 +29,14 @@
         <!-- Chat Room -->
         <div id="chat-room-page" class="page hidden">
             <div class="chat-header">
-                <h3>Channel: <span id="room-name"></span></h3>
+                <h3>
+                    Channel ID: 
+                    <span id="room-name"></span> 
+                    <button id="copy-btn" title="Copy Channel ID">❐</button>
+                </h3>
                 <button id="leave-room">Terminate Connection</button>
             </div>
-            <div id="messages"></div>
+            <div id="messages"> </div>
             <div id="chat-input">
                 <input type="text" id="message" placeholder="Enter your message..." />
                 <button id="send-message">Transmit</button>

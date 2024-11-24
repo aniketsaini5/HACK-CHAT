@@ -22,7 +22,7 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', ({ room, userName }) => {
         socket.join(room);
         console.log(`${userName} joined room ${room}`);
-        socket.to(room).emit('message', { user: 'System', text: `${userName} has joined the room.` });
+        socket.to(room).emit('message', { user: 'GHOST💀', text: `${userName} has joined the room.` });
     });
 
     socket.on('chatMessage', ({ room, userName, message }) => {
