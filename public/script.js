@@ -79,6 +79,27 @@ function sendMessage() {
     messageInput.value = '';
 }
 
+function escapeHtml(value) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function base64ToBlob(base64, mimeType) {
+    const binary = atob(base64);
+    const length = binary.length;
+    const bytes = new Uint8Array(length);
+
+    for (let i = 0; i < length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    return new Blob([bytes], { type: mimeType });
+}
+
 // Updated message display function
 socket.on('message', ({ user, text }) => {
     const messageContainer = document.createElement('div');
@@ -104,7 +125,10 @@ socket.on('message', ({ user, text }) => {
 // Send File
 sendFileBtn.addEventListener('click', () => {
     const file = fileInput.files[0];
-    if (!file) return;
+    if (!file) {
+        alert('Please choose a file first.');
+        return;
+    }
 
     const maxFileSize = 100 * 1024 * 1024; // 100 MB
     if (file.size > maxFileSize) {
@@ -124,10 +148,10 @@ sendFileBtn.addEventListener('click', () => {
         userName,
         fileName: file.name,
         fileSize: file.size,
-        fileType: file.type
+        fileType: file.type || 'application/octet-stream'
     });
 
-    socket.on('file-transfer-ready', ({ fileId }) => {
+    socket.once('file-transfer-ready', ({ fileId }) => {
         const reader = new FileReader();
         let chunkIndex = 0;
 
@@ -184,9 +208,19 @@ socket.on('fileMessage', ({ user, fileName, fileType, fileContent }) => {
     userElement.className = 'message-user';
     userElement.textContent = user;
 
+    const safeMimeType = fileType || 'application/octet-stream';
+    const blob = base64ToBlob(fileContent, safeMimeType);
+    const fileUrl = URL.createObjectURL(blob);
+
     const fileElement = document.createElement('div');
     fileElement.className = 'message-content';
-    fileElement.innerHTML = `<a href="data:${fileType};base64,${fileContent}" download="${fileName}">${fileName}</a>`;
+    fileElement.innerHTML = `<a href="${fileUrl}" download="${escapeHtml(fileName)}">${escapeHtml(fileName)}</a>`;
+
+    const fileLink = fileElement.querySelector('a');
+    fileLink.addEventListener('click', () => {
+        // Revoke object URL shortly after click to avoid leaking memory.
+        setTimeout(() => URL.revokeObjectURL(fileUrl), 2000);
+    }, { once: true });
 
     messageContainer.appendChild(userElement);
     messageContainer.appendChild(fileElement);

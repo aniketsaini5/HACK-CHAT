@@ -229,6 +229,13 @@ body {
     color: white;
 }
 
+#file-help {
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #99ff99;
+    border-top: 1px solid #003300;
+}
+
 /* File input styling */
 #file-input {
     display: none;

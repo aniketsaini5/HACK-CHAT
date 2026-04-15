@@ -23,6 +23,10 @@ const setupWorker = () => {
     const activeTransfers = new Map();
 
     const handleFileTransferStart = (socket, { room, userName, fileName, fileSize, fileType }) => {
+        if (!Number.isFinite(fileSize) || fileSize <= 0) {
+            return socket.emit('file-transfer-error', 'Invalid file size');
+        }
+
         if (fileSize > MAX_FILE_SIZE) {
             return socket.emit('file-transfer-error', 'File size exceeds 100 MB limit');
         }
@@ -35,6 +39,7 @@ const setupWorker = () => {
             fileSize, 
             fileType, 
             chunks: [],
+            receivedBytes: 0,
             startTime: Date.now()
         });
         socket.emit('file-transfer-ready', { fileId });
@@ -47,9 +52,22 @@ const setupWorker = () => {
         }
 
         try {
-            transfer.chunks.push(chunk);
+            const chunkBuffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+            transfer.receivedBytes += chunkBuffer.length;
+
+            if (transfer.receivedBytes > transfer.fileSize || transfer.receivedBytes > MAX_FILE_SIZE) {
+                activeTransfers.delete(fileId);
+                return socket.emit('file-transfer-error', 'File size exceeds 100 MB limit');
+            }
+
+            transfer.chunks.push(chunkBuffer);
 
             if (isLastChunk) {
+                if (transfer.receivedBytes !== transfer.fileSize) {
+                    activeTransfers.delete(fileId);
+                    return socket.emit('file-transfer-error', 'File transfer incomplete or corrupted');
+                }
+
                 const fileContent = Buffer.concat(transfer.chunks);
                 const transferTime = Date.now() - transfer.startTime;
 
